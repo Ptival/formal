@@ -1,0 +1,358 @@
+embed {{ tex-preamble
+\usepackage{xcolor}
+\usepackage{mathtools}
+
+%Nice colors:
+%972386 purple
+%0C8E1C green
+%F18038 orange
+%11BEF9 lightblue
+%781918 brown
+%7EA102 lightgreen
+%D5390D red
+
+\newcommand{\contextcolor}    {000000}
+\newcommand{\reductioncolor}  {972386}
+\newcommand{\conversioncolor} {0C8E1C}
+\newcommand{\correctnesscolor}{F18038}
+\newcommand{\inductivecolor}  {781918}
+
+\definecolor{formula}    {HTML}{0000FF}
+\definecolor{context}    {HTML}{\contextcolor}
+\definecolor{beta}       {HTML}{\reductioncolor}
+\definecolor{iota}       {HTML}{\reductioncolor}
+\definecolor{delta}      {HTML}{\reductioncolor}
+\definecolor{zeta}       {HTML}{\reductioncolor}
+\definecolor{reduces}    {HTML}{\reductioncolor}
+\definecolor{reducesmany}{HTML}{\reductioncolor}
+\definecolor{eta}        {HTML}{\conversioncolor}
+\definecolor{conv}       {HTML}{\conversioncolor}
+\definecolor{sub}        {HTML}{\conversioncolor}
+\definecolor{wellformed} {HTML}{\correctnesscolor}
+\definecolor{welltyped}  {HTML}{\correctnesscolor}
+\definecolor{ind}        {HTML}{\inductivecolor}
+
+}}
+
+metavar global, g ::=
+metavar level, i, j, k ::=
+metavar parameters, p ::=
+metavar variable, x, I, c ::=
+indexvar l, m, n ::=
+
+parsing
+formula_Formulas left formula_Formulas
+
+grammar
+
+sort, S :: 'sort_' ::=
+| Prop   :: :: Prop
+| Set    :: :: Set
+| Type i :: :: Type
+
+term, s, t, u, A, C, T, U :: 'term_' ::=
+| S               ::   :: Sort
+| c               ::   :: Constant
+| x               ::   :: Variable
+| I               ::   :: Inductive
+| ∀ x : T , U     ::   :: Forall (+ bind x in U +)
+{{ tex \forall [[x]] : [[T]], [[U]] }}
+| λ x : T . U     ::   :: Lambda (+ bind x in U +)
+{{ tex \lambda [[x]] : [[T]]. [[U]] }}
+| T U             ::   :: Application
+| let x := T in U ::   :: Let (+ bind x in U +)
+{{ tex \ottkw{let} \, [[x]] \coloneqq [[T]] \, \ottkw{in} \, [[U]] }}
+| t { x ← u }     ::   :: Substitution
+{{ tex [[t]] \{ [[x]] \leftarrow [[u]] \} }}
+| ( t )           :: S :: Parentheses
+
+decl, d :: 'declaration_' ::=
+| x : T       ::   :: VarAssumption (+ b = x +)
+| x := t : T  ::   :: VarDefinition (+ b = x +)
+{{ tex [[x]] \coloneqq [[t]] : [[T]] }}
+| c : T       ::   :: ConstAssumption (+ b = c +)
+| c := t : T  ::   :: ConstDefinition (+ b = c +)
+{{ tex [[c]] \coloneqq [[t]] : [[T]] }}
+| I : A := CV ::   :: Inductive
+(+ b = I union b(CV) +)
+| ( d )       :: S :: Parentheses
+
+context, G {{ tex \Gamma }} :: 'context_' ::=
+| ε                 ::   :: Empty (+ b = {} +)
+{{ tex \epsilon }}
+| G '::' d          ::   :: Extension
+(+ b = b(G) union b(d) +) (+ bind b(G) in d +)
+{{ tex [[G]] \, \textcolor{context}{::} \, [[d]] }}
+| [ d1 ; ... ; dn ] ::   :: List
+(+ b = b(d1 ... dn) +)
+| ( G )             :: S :: Parentheses
+
+sorts :: 'sorts_' ::=
+| s1 , .. , sn :: :: Sorts
+
+formula, F :: 'formula_' ::=
+| judgement     ::   :: judgement
+| F1 ... Fn     ::   :: FormulaList
+| i < j         ::   :: UniverseLT
+{{ tex [[i]] \, \textcolor{formula}{<} \, [[j]] }}
+| i <= j        ::   :: UniverseLE
+{{ tex [[i]] \, \textcolor{formula}{\le} \,  [[j]] }}
+| d ∈ G         ::   :: DeclInContext
+{{ tex [[d]] \, \textcolor{formula}{\in} \, [[G]] }}
+| s ∈ { sorts } ::   :: SortConstraint
+{{ tex [[s]] \, \textcolor{formula}{\in} \, \{ [[sorts]] \} }}
+| c ∉ G         ::   :: ConstantNotInContext
+{{ tex [[c]] \, \textcolor{formula}{\notin} \, [[G]] }}
+| F1 ;;; F2     :: S :: Formulas
+{{ tex [[F1]] \qquad [[F2]] }}
+%| ( F )         :: S :: Parentheses {{ tex [[F]] }}
+
+constructor_vector, CV {{ tex \ottcomp{c_n : C_n}{n} }} :: '' ::=
+| c1 : C1 ... cn : Cn :: :: Constructors (+ b = c1 ... cn +)
+% TODO: use the version below if/when it works...
+%| </ cn : Cn // n /> :: :: Constructors2 (+ b = cn +)
+
+terminals :: 'terminals_' ::=
+%| ⊢ :: :: Turnstile {{ tex \vdash }}
+%| ∉ :: :: NotIn {{ tex \notin }}
+%| ∪ :: :: Union {{ tex \vee }}
+
+embed {{ tex
+\textbf{Remark:} We do not distinguish local context and environment for simplicity.\\
+\textbf{Remark:} We do not distinguish constants and variables for simplicity.\\
+\\}}
+
+defns
+reduction_rules :: '' ::=
+
+defn
+  G ⊢ t ▷β u :: :: Beta :: ''
+  {{* tex [[G]] \, \textcolor{beta}{\vdash} \, [[t]] \, \textcolor{beta}{\triangleright_{\beta}} \, [[u]] *}}
+  by
+
+  ------------------------------------- :: Beta
+  G ⊢ ((λ x : T . t) u) ▷β t { x ← u }
+
+defn
+  G ⊢ t ▷ι u :: :: Iota :: ''
+  {{* tex [[G]] \, \textcolor{iota}{\vdash} \, [[t]] \, \textcolor{iota}{\triangleright_{\iota}} \, [[u]] *}}
+  by
+
+{{ com \\TODO: $\iota$-reduction\\\\ }}
+
+defn
+  G ⊢ t ▷δ u :: :: Delta :: 'Delta_'
+  {{* tex [[G]] \, \textcolor{delta}{\vdash} \, [[t]] \, \textcolor{delta}{\triangleright_{\delta}} \, [[u]] *}}
+  by
+
+  (x := t : T) ∈ G
+  ---------------- :: variable
+  G ⊢ x ▷δ t
+
+  (c := t : T) ∈ G
+  ---------------- :: constant
+  G ⊢ c ▷δ t
+
+defn
+  G ⊢ t ▷ζ u :: :: Zeta :: ''
+  {{* tex [[G]] \, \textcolor{zeta}{\vdash} \, [[t]] \, \textcolor{zeta}{\triangleright_{\zeta}} \, [[u]] *}}
+  by
+
+  ----------------------------------- :: Zeta
+  G ⊢ let x := u in t ▷ζ t { x ← u }
+
+defn
+  G ⊢ t ▷ u :: :: Reduces :: 'Red_'
+  {{* tex [[G]] \, \textcolor{reduces}{\vdash} \, [[t]] \, \textcolor{reduces}{\triangleright} \, [[u]] *}}
+  by
+
+  G ⊢ t ▷β u
+  ----------- :: Beta
+  G ⊢ t ▷ u
+
+  G ⊢ t ▷ι u
+  ----------- :: Iota
+  G ⊢ t ▷ u
+
+  G ⊢ t ▷δ u
+  ----------- :: Delta
+  G ⊢ t ▷ u
+
+  G ⊢ t ▷ζ u
+  ----------- :: Zeta
+  G ⊢ t ▷ u
+
+defn
+  G ⊢ t ▷ … ▷ u :: :: ReducesMany :: ''
+  {{ tex [[G]] \, \textcolor{reducesmany}{\vdash} \, [[t]] \, \textcolor{reducesmany}{\triangleright \, ... \, \triangleright} \, [[u]] }}
+  by
+
+  G ⊢ t ▷ u
+  --------------- :: Reduces_base
+  G ⊢ t ▷ … ▷ u
+
+  G ⊢ t ▷ t1 ;;; G ⊢ t1 ▷ … ▷ u
+  -------------------------------- :: Reduces_step
+  G ⊢ t ▷ … ▷ u
+
+
+
+defns
+conversion_rules :: '' ::=
+
+defn
+  G ⊢ t =η u :: :: EtaConvertibility :: 'Eta_'
+  {{* tex [[G]] \, \textcolor{eta}{\vdash} \, [[t]] \, \textcolor{eta}{=_{\eta}} \, [[u]] *}}
+  by
+
+  ----------- :: refl
+  G ⊢ t =η t
+
+  G ⊢ u =η t
+  ----------- :: sym
+  G ⊢ t =η u
+
+  G ⊢ u1 =η u2 x
+  ---------------------- :: step
+  G ⊢ λ x : T . u1 =η u2
+
+defn
+  G ⊢ t =βιδζη u :: :: Convertibility :: ''
+  {{* tex [[G]] \, \textcolor{conv}{\vdash} \, [[t]] \, \textcolor{conv}{=_{\beta\iota\delta\zeta\eta}} \, [[u]] *}}
+  by
+
+  G ⊢ t1 ▷ … ▷ u1 ;;; G ⊢ t2 ▷ … ▷ u2 ;;; G ⊢ u1 =η u2
+  -------------------------------------------------------- :: Convertibility
+  G ⊢ t1 =βιδζη t2
+
+defn
+  G ⊢ t <=βιδζη u :: :: Subtyping :: 'Sub_'
+  {{* tex [[G]] \, \textcolor{sub}{\vdash} \, [[t]] \, \textcolor{sub}{\le_{\beta\iota\delta\zeta\eta}} \, [[u]] *}}
+  by
+
+  G ⊢ t =βιδζη u
+  ---------------- :: Refl
+  G ⊢ t <=βιδζη u
+
+  i <= j
+  -------------------------- :: Type
+  G ⊢ Type i <=βιδζη Type j
+
+  ----------------------- :: Set
+  G ⊢ Set <=βιδζη Type i
+
+  --------------------- :: Prop
+  G ⊢ Prop <=βιδζη Set
+
+  G ⊢ T =βιδζη U ;;; G :: (x : T) ⊢ T' <=βιδζη U'
+  ------------------------------------------------ :: Forall
+  G ⊢ ∀ x : T, T' <=βιδζη ∀ x : U, U'
+
+
+
+defns
+correctness_rules :: '' ::=
+
+  defn
+  WF G :: :: WF :: 'WF_'
+  {{* tex \textcolor{wellformed}{\ottkw{WF}} \, [[G]] *}}
+  {{ com Context [[G]] is well-formed }}
+  by
+
+  ---- :: empty
+  WF ε
+
+  G ⊢ T : S ;;; x ∉ G
+  -------------------- :: var_assumption
+  WF (G :: (x : T))
+
+  G ⊢ t : T ;;; x ∉ G
+  ---------------------- :: var_definition
+  WF (G :: (x := t : T))
+
+  G ⊢ A : s ;;; I ∉ G ;;; cn ∉ G
+  ------------------------------- :: inductive
+  WF (G :: (I : A := CV))
+
+{{ com \\TODO: add positivity constraint, restrict s to unify with an arity \\\\ }}
+
+  defn
+  G ⊢ t : T :: :: WT :: 'Typ_'
+  {{ tex [[G]] \, \textcolor{welltyped}{ \vdash } \, [[t]] \, \textcolor{welltyped}{:} \, [[T]] }}
+  {{ com [[t]] has type [[T]] in context [[G]] }}
+  by
+
+  WF G
+  ------------------ :: ax_prop
+  G ⊢ Prop : Type i
+
+  WF G
+  ----------------- :: ax_set
+  G ⊢ Set : Type i
+
+  WF G ;;; i < j
+  -------------------- :: ax_type
+  G ⊢ Type i : Type j
+
+  WF G ;;; (x : T) ∈ G
+  -------------------- :: var1
+  G ⊢ x : T
+
+  WF G ;;; (x := t : T) ∈ G
+  ------------------------- :: var2
+  G ⊢ x : T
+
+  WF G ;;; (c : T) ∈ G
+  -------------------- :: const1
+  G ⊢ c : T
+
+  WF G ;;; (c := t : T) ∈ G
+  ------------------------- :: const2
+  G ⊢ c : T
+
+  G ⊢ T : s ;;; G :: (x : T) ⊢ U : Prop
+  -------------------------------------- :: prod_prop
+  G ⊢ ∀ x : T , U : Prop
+
+  G ⊢ T : s ;;; s ∈ { Prop , Set } ;;; G :: (x : T) ⊢ U : Set
+  ------------------------------------------------------------ :: prod_set
+  G ⊢ ∀ x : T , U : Set
+
+  G ⊢ T : Type i ;;; i <= k ;;; G :: (x : T) ⊢ U : Type j ;;; j <= k
+  -------------------------------------------------------------------- :: prod_type
+  G ⊢ ∀ x : T , U : Type k
+
+  G ⊢ ∀ x : T , U : s ;;; G :: (x : T) ⊢ t : U
+  --------------------------------------------- :: lam
+  G ⊢ λ x : T . t : ∀ x : T , U
+
+  G ⊢ t : ∀ x : U , T ;;; G ⊢ u : U
+  ---------------------------------- :: app
+  G ⊢ t u : T { x ← u }
+
+  G ⊢ t : T ;;; G :: (x := t : T) ⊢ u : U
+  ---------------------------------------- :: let
+  G ⊢ let x := t in u : U { x ← t }
+
+{{ com \textbf{Remark:} We may have $[[let x := t in u]]$ well-typed without having $[[((λ x : T . u) t)]]$ well-typed (where $[[T]]$ is a type of $[[t]]$), because the value $[[t]]$ associated to $[[x]]$ may be used in a conversion rule.\\\\ }}
+
+  G ⊢ U : s ;;; G ⊢ t : T ;;; G ⊢ T <=βιδζη U
+  --------------------------------------------- :: conv
+  G ⊢ t : U
+
+
+
+defns
+inductive_rules :: '' ::=
+
+  defn
+  G ⊢ Ind p ( I : A , CV ) :: :: Ind :: 'Ind_'
+  {{* tex [[G]] \, \textcolor{ind}{\vdash} \, \textcolor{ind}{\ottkw{Ind}}^{[[p]]} \textcolor{ind}{(} [[I]] : [[A]] \textcolor{ind}{,} \, [[CV]] \textcolor{ind}{)} *}}
+  {{ com Inductive [[I]] is well-formed }}
+  by
+
+  WF G ;;; (I : A := </ cn : Cn // n />) ∈ G
+  ---------------------------------------- :: well_formed
+  G ⊢ Ind p (I : A, </ cn : Cn // n />)
+
+{{ com \textbf{Remark:} I believe the well-formedness of the context captures the freshness of $[[I]]$ and $\ottcomp{[[cn]]}{n}$. }}
